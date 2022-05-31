@@ -1,76 +1,83 @@
-import React from 'react'
-import { useState } from 'react'
-//import { Auth } from '../../services/http/auth'
-import Categories from '../Categories/Categories'
-import Todos from '../Todos/Todos'
-import PropTypes from 'prop-types';
+import React from 'react';
+import { useState } from 'react';
+import index from '../../service/authService/index'
+import { useNavigate } from 'react-router-dom';
+import '../Login/Login.css'
+
+const LOGIN_URL = '/auth/login'
 
 function Login() {
-    const [username, setUsername] = useState("")
-    const [password, setPassword] = useState("")
-    const [success, setSuccess] = useState(false)
-    const [tab, setTab] = useState('todo')
+    const navigate = useNavigate();
+
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    //const [success, setSuccess] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        //console.log(username, password)
-        try{
-            let item = {username, password}
-            let result = await fetch('http://localhost:81/auth/login', {
-                method: 'POST',
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json"
-                },
-                body: JSON.stringify(item)
-            })
-            result = await result.json()
-            console.log(result)
-            setUsername('')
+        //console.log(username, password);
+        try {
+            const response = await index.post(LOGIN_URL,
+                JSON.stringify({username, password}),
+                {
+                    headers: {
+                        'Content-Type': 'application/json'},
+                    withCredentials: true
+                    
+                }
+            )
+            JSON.stringify(localStorage.setItem('user', response?.data.token))
+            //console.log(JSON.stringify(response?.data));
+            //const token = response?.data?.token;
+            //const roles = response?.data?.roles;
+            setUsername('');
             setPassword('')
-            setSuccess(true)
-        } catch(ex) {
-            console.log(ex.message)
+            navigate('todos');
+        } catch (error) {
+            if(!error?.response) {
+                alert('No Server Response');
+            } else if(error.response?.status === 400) {
+                alert('Missing Username Or Password');
+            } else if(error.response?.status === 401) {
+                alert('Unauthorized')
+            } else {
+                alert('Login Failed')
+            }
         }
     }
 
-    return ( 
+    return (
         <div className="login-container">
-            {
-                success ? (
-                    <div className='buttons'>
-                        <button className='todos-button' onClick={()=>setTab('todo')}>Todos</button>
-                        <button className='categories-button' onClick={()=>setTab('category')}>Categories</button>
-                        {tab === 'todo' ? <Todos/> : <Categories/>}
-                    </div>
-                ) : (
-                    <form onSubmit={handleSubmit}>
-                        <label htmlFor='username'>Username:</label>
-                        <input
-                            type="text"
-                            id="username"
-                            value={username}
-                            onChange={(e)=>setUsername(e.target.value)}
-                            required
-                        />
-                        <label htmlFor='password'>Password:</label>
-                        <input
-                            type="password"
-                            id="password"
-                            value={password}
-                            onChange={(e)=>setPassword(e.target.value)}
-                            required
-                        />
-                        <button>Login</button>
-                    </form>
-                )
-            }
+            <h1>Login</h1>
+            <form onSubmit={handleSubmit}>
+                <div className="input-box">
+                    <label htmlFor='username'>Username:</label>
+                    <br/>
+                    <input
+                        type="text"
+                        id="username"
+                        value={username}
+                        onChange={(e)=>setUsername(e.target.value)}
+                        required
+                    />
+                </div>
+                <div className="input-box">
+                    <label htmlFor='password'>Password:</label>
+                    <br/>
+                    <input
+                        type="password"
+                        id="password"
+                        value={password}
+                        onChange={(e)=>setPassword(e.target.value)}
+                        required
+                    />
+                </div>
+                <div className="login-btn">
+                    <button type="submit">Login</button>
+                </div>
+            </form>
         </div>
-    );
+    )
 }
 
 export default Login;
-
-Login.propTypes = {
-    setToken: PropTypes.func.isRequired
-};
